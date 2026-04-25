@@ -2,7 +2,6 @@ import socket
 import serial
 import time
 
-# --- AYARLAR ---
 UDP_IP = "0.0.0.0"  # Herkesten dinle
 UDP_PORT = 5005     # Laptopun veri gönderdiği port
 
