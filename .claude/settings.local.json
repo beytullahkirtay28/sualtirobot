@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude plugin *)",
+      "Bash(where claude *)",
+      "Read(//c/Users/Lenovo/**)",
+      "Bash(\"/c/Users/Lenovo/AppData/Local/Microsoft/WinGet/Links/claude.exe\" plugin *)",
+      "Bash(/c/Users/Lenovo/AppData/Local/Microsoft/WinGet/Links/claude.exe plugin *)"
+    ]
+  }
+}
