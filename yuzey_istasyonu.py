@@ -21,6 +21,7 @@ class Rusumat4Control:
         self.KOL_ADIM_BTN = 5          # GUI butonları için derece
         self.KOL_BTN_KAPAT = 4         # joystick LB
         self.KOL_BTN_AC = 5            # joystick RB
+        self.JOY_DEADZONE = 0.08       # |val| < bu → 0 sayılır (stick yaylanma sapması)
 
         # Motor test (basıldığı sürece ilgili motor çalışır)
         self.TEST_DEGER = 0.3          # test motor throttle değeri (-1..1)
@@ -143,6 +144,16 @@ class Rusumat4Control:
             self.sock_kol.sendto(msg.encode(), (self.PI_IP, self.UDP_PORT))
         except Exception:
             pass
+
+    def _dz(self, v):
+        # Deadzone uygula + dogrusal orantili olcekle
+        # Stick'in deadzone disindaki kismini 0..1 araligina yeniden esle
+        # (yumuşak baslangic ve tam aralık)
+        if abs(v) < self.JOY_DEADZONE:
+            return 0.0
+        sign = 1.0 if v > 0 else -1.0
+        scaled = (abs(v) - self.JOY_DEADZONE) / (1.0 - self.JOY_DEADZONE)
+        return round(sign * scaled, 3)
 
     # ----------------------------- Joystick -----------------------------
     def check_joystick(self):
@@ -285,10 +296,10 @@ class Rusumat4Control:
                 # --- JOYSTICK STREAM (test modunda susar) ---
                 if self.joy and self.test_motor is None:
                     pygame.event.pump()
-                    sol_x = round(self.joy.get_axis(0), 2)
-                    sol_y = round(self.joy.get_axis(1), 2)
-                    sag_x = round(self.joy.get_axis(2), 2)
-                    sag_y = round(self.joy.get_axis(3), 2)
+                    sol_x = self._dz(self.joy.get_axis(0))
+                    sol_y = self._dz(self.joy.get_axis(1))
+                    sag_x = self._dz(self.joy.get_axis(2))
+                    sag_y = self._dz(self.joy.get_axis(3))
 
                     try:
                         if self.joy.get_button(self.KOL_BTN_KAPAT):
