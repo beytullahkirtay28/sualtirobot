@@ -32,6 +32,9 @@ class Rusumat4Control:
         self.lbl_status = tk.Label(self.info_frame, text="📡 SİSTEM: BEKLİYOR", font=("Arial", 14, "bold"), bg="#1e272e", fg="#d2dae2")
         self.lbl_status.grid(row=0, column=1, padx=30)
 
+        self.lbl_kol = tk.Label(self.info_frame, text="🦾 KOL: 90°", font=("Arial", 14, "bold"), bg="#1e272e", fg="#ffda79")
+        self.lbl_kol.grid(row=0, column=2, padx=30)
+
         # Butonlar
         self.btn_frame = tk.Frame(window, bg="#1e272e")
         self.btn_frame.pack(pady=10)
@@ -44,6 +47,12 @@ class Rusumat4Control:
         self.sock_kol = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.joy = None
         self.thread = None
+
+        # Kol servo durumu (0..180)
+        self.kol_aci = 90
+        self.KOL_ADIM = 2          # her okumada artış (derece)
+        self.KOL_BTN_KAPAT = 4     # LB
+        self.KOL_BTN_AC = 5        # RB
         
         # Joystick kontrolünü sürekli yapacak fonksiyonu başlat
         self.check_joystick()
@@ -126,7 +135,18 @@ class Rusumat4Control:
                     sol_y = round(self.joy.get_axis(1), 2)
                     sag_x = round(self.joy.get_axis(2), 2)
                     sag_y = round(self.joy.get_axis(3), 2)
-                    cmd = f"{sol_x},{sol_y},{sag_x},{sag_y}"
+
+                    # Robot kolu servosu (LB=kapat, RB=aç)
+                    try:
+                        if self.joy.get_button(self.KOL_BTN_KAPAT):
+                            self.kol_aci = max(0, self.kol_aci - self.KOL_ADIM)
+                        if self.joy.get_button(self.KOL_BTN_AC):
+                            self.kol_aci = min(180, self.kol_aci + self.KOL_ADIM)
+                    except Exception:
+                        pass
+                    self.window.after(0, lambda a=self.kol_aci: self.lbl_kol.config(text=f"🦾 KOL: {a}°"))
+
+                    cmd = f"{sol_x},{sol_y},{sag_x},{sag_y},{self.kol_aci}"
                     self.sock_kol.sendto(cmd.encode(), (self.PI_IP, self.UDP_PORT))
 
                 # --- GÖRÜNTÜYÜ EKRANA BAS (ana thread'de güvenli) ---
