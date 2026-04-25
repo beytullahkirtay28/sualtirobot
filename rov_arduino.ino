@@ -79,7 +79,36 @@ void mix() {
   motorlariYaz(v);
 }
 
-void parse(String s) {
+// Tek motor test: "M,idx,val"  (idx=0 -> hepsi neutral, idx 1..6)
+void parseMotorTest(String s) {
+  int c1 = s.indexOf(',');
+  int c2 = s.indexOf(',', c1 + 1);
+  if (c1 < 0 || c2 < 0) return;
+  int idx   = s.substring(c1 + 1, c2).toInt();
+  float val = s.substring(c2 + 1).toFloat();
+
+  // Tum motorlari neutral'a al
+  for (int i = 0; i < 6; i++) motor[i].writeMicroseconds(ESC_NEUTRAL);
+
+  // Sadece istenen motoru calistir
+  if (idx >= 1 && idx <= 6) {
+    motor[idx - 1].writeMicroseconds(eksenToPwm(val));
+  }
+}
+
+// Direkt kol acisi: "K,angle"
+void parseKolDirect(String s) {
+  int c1 = s.indexOf(',');
+  if (c1 < 0) return;
+  int a = s.substring(c1 + 1).toInt();
+  if (a < KOL_MIN) a = KOL_MIN;
+  if (a > KOL_MAX) a = KOL_MAX;
+  kol_aci = a;
+  kol.write(kol_aci);
+}
+
+// Standart joystick stream: "sol_x,sol_y,sag_x,sag_y[,kol_aci]"
+void parseJoystick(String s) {
   float val[5] = {0, 0, 0, 0, (float)kol_aci};
   int idx = 0, start = 0;
   int n = s.length();
@@ -105,6 +134,18 @@ void parse(String s) {
   }
 
   mix();
+}
+
+void parse(String s) {
+  if (s.length() == 0) return;
+
+  if (s.startsWith("M,") || s.startsWith("m,")) {
+    parseMotorTest(s);
+  } else if (s.startsWith("K,") || s.startsWith("k,")) {
+    parseKolDirect(s);
+  } else {
+    parseJoystick(s);
+  }
   son_veri_ms = millis();
 }
 
