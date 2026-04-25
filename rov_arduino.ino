@@ -5,10 +5,11 @@ const uint8_t MOTOR_PIN[6] = {3, 5, 6, 9, 10, 11};
 const uint8_t KOL_PIN = 4;
 
 // --- ESC (Bidirectional 30A, 1000-2000us) ---
-const int ESC_MIN     = 1100;   // ters yon (guvenli baslangic %80)
+const int ESC_MIN     = 1000;   // tam ters yon
 const int ESC_NEUTRAL = 1500;   // dur
-const int ESC_MAX     = 1900;   // ileri yon
-const int ESC_RANGE   = 400;    // neutral +- range
+const int ESC_MAX     = 2000;   // tam ileri yon
+const int ESC_RANGE   = 500;    // neutral +- range (tam guc)
+const float ESC_DEADZONE = 0.05;  // |v| < bu degerse motor durur (titreme onler)
 
 // --- SERVO (kol) ---
 const int KOL_MIN = 0;
@@ -36,7 +37,8 @@ String buffer = "";
 int eksenToPwm(float v) {
   if (v >  1.0) v =  1.0;
   if (v < -1.0) v = -1.0;
-  return ESC_NEUTRAL + (int)(v * ESC_RANGE);
+  if (fabs(v) < ESC_DEADZONE) return ESC_NEUTRAL;   // kucuk titremeleri yut
+  return ESC_NEUTRAL + (int)(v * ESC_RANGE);        // dogrusal orantili
 }
 
 void motorlariYaz(float v[6]) {
