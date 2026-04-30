@@ -14,9 +14,10 @@ const float ESC_DEADZONE = 0.05;  // |v| < bu degerse motor durur (titreme onler
 // --- SERVO (kol) ---
 const int KOL_MIN = 0;
 const int KOL_MAX = 180;
-// Dijital servo icin standart aralik (bazi servolar 544-2400 default ile titrer)
-const int KOL_PWM_MIN = 1000;   // 0 derece icin darbe genisligi (us)
-const int KOL_PWM_MAX = 2000;   // 180 derece icin darbe genisligi (us)
+// Genis aralik: servo'nun tam 180 derece donmesi icin
+// (1000-2000 araligi cogu dijital servoda sadece ~90 derece doner)
+const int KOL_PWM_MIN = 500;    // 0 derece icin darbe genisligi (us)
+const int KOL_PWM_MAX = 2500;   // 180 derece icin darbe genisligi (us)
 
 // --- FAILSAFE ---
 const unsigned long TIMEOUT_MS = 500;
