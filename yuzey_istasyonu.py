@@ -17,8 +17,8 @@ class Rusumat4Control:
 
         # Joystick / kol
         self.kol_aci = 90
-        self.KOL_ADIM_JOY = 2          # joystick LB/RB için derece
-        self.KOL_ADIM_BTN = 5          # GUI butonları için derece
+        self.KOL_ADIM_JOY = 4          # joystick LB/RB için derece (2x hız)
+        self.KOL_ADIM_BTN = 10         # GUI butonları için derece (2x hız)
         self.KOL_BTN_KAPAT = 4         # joystick LB
         self.KOL_BTN_AC = 5            # joystick RB
         self.JOY_DEADZONE = 0.08       # |val| < bu → 0 sayılır (stick yaylanma sapması)
@@ -99,8 +99,8 @@ class Rusumat4Control:
         row2.pack(pady=4)
         self._mk_button(row2, "📷 KAMERA AÇ/KAPA",   self.toggle_camera,    "#3742fa", 0)
         self._mk_button(row2, "🦾 KOL: SIFIRLA (90°)", self.kol_sifirla,    "#7158e2", 1)
-        self._mk_button(row2, "🦾 KOL +5°",           self.kol_arttir,     "#7158e2", 2)
-        self._mk_button(row2, "🦾 KOL -5°",           self.kol_azalt,      "#7158e2", 3)
+        self._mk_button(row2, "🦾 KOL +10°",          self.kol_arttir,     "#7158e2", 2)
+        self._mk_button(row2, "🦾 KOL -10°",          self.kol_azalt,      "#7158e2", 3)
 
         # Satır 3: Motor test (6 ad — basılı tut)
         tk.Label(self.advanced_frame,
