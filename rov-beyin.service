@@ -1,0 +1,23 @@
+[Unit]
+Description=ROV Beyin (UDP -> Arduino Serial bridge)
+# USB ve ağ hazır olunca başla
+After=network.target dev-ttyUSB0.device dev-ttyACM0.device
+Wants=network.target
+
+[Service]
+Type=simple
+# KULLANICI ADINI VE YOLU KENDİNE GÖRE DEĞİŞTİR:
+User=ali
+WorkingDirectory=/home/ali/Desktop/ROV
+ExecStart=/usr/bin/python3 /home/ali/Desktop/ROV/rov_beyin.py
+
+# Çökerse otomatik tekrar başla
+Restart=always
+RestartSec=3
+
+# Loglar journald'a yazılır (journalctl ile bakılır)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
