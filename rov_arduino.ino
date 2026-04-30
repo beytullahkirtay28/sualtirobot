@@ -14,6 +14,10 @@ const float ESC_DEADZONE = 0.05;  // |v| < bu degerse motor durur (titreme onler
 // --- SERVO (kol) ---
 const int KOL_MIN = 0;
 const int KOL_MAX = 180;
+// Genis aralik: servo'nun tam 180 derece donmesi icin
+// (1000-2000 araligi cogu dijital servoda sadece ~90 derece doner)
+const int KOL_PWM_MIN = 500;    // 0 derece icin darbe genisligi (us)
+const int KOL_PWM_MAX = 2500;   // 180 derece icin darbe genisligi (us)
 
 // --- FAILSAFE ---
 const unsigned long TIMEOUT_MS = 500;
@@ -158,7 +162,7 @@ void setup() {
     motor[i].attach(MOTOR_PIN[i]);
     motor[i].writeMicroseconds(ESC_NEUTRAL);
   }
-  kol.attach(KOL_PIN);
+  kol.attach(KOL_PIN, KOL_PWM_MIN, KOL_PWM_MAX);
   kol.write(kol_aci);
 
   delay(ARM_DELAY_MS);   // ESC arm

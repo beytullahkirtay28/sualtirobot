@@ -72,6 +72,9 @@ def main():
                 if ser is not None:
                     try:
                         ser.write((mesaj + '\n').encode('utf-8'))
+                        # Servo/test komutlari (joystick stream'i log spam yapmasın diye filtre)
+                        if mesaj.startswith("K,") or mesaj.startswith("M,"):
+                            print(f"➡️  Arduino'ya gönderildi: {mesaj}")
                     except (serial.SerialException, OSError) as e:
                         print(f"❌ Arduino yazma hatası, bağlantı kapatılıyor: {e}")
                         try:
