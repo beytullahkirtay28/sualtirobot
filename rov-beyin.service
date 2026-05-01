@@ -1,21 +1,25 @@
 [Unit]
 Description=ROV Beyin (UDP -> Arduino Serial bridge)
-# USB ve ağ hazır olunca başla
-After=network.target dev-ttyUSB0.device dev-ttyACM0.device
+# USB ve ag hazir olunca basla
+After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-# KULLANICI ADINI VE YOLU KENDİNE GÖRE DEĞİŞTİR:
+# KULLANICI ADINI VE YOLU KENDINE GORE DEGISTIR:
 User=ali
 WorkingDirectory=/home/ali/Desktop/ROV
-ExecStart=/usr/bin/python3 /home/ali/Desktop/ROV/rov_beyin.py
+# -u: Python stdout buffering kapali, print'ler aninda journal'a gider
+ExecStart=/usr/bin/python3 -u /home/ali/Desktop/ROV/rov_beyin.py
 
-# Çökerse otomatik tekrar başla
+# Cokerse otomatik tekrar basla
 Restart=always
 RestartSec=3
 
-# Loglar journald'a yazılır (journalctl ile bakılır)
+# Python stdout buffering kapatma (yedek)
+Environment=PYTHONUNBUFFERED=1
+
+# Loglar journald'a yazilir (journalctl ile bakilir)
 StandardOutput=journal
 StandardError=journal
 
