@@ -10,7 +10,9 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git remote *)",
-      "Bash(echo \"Remote: $\\(git remote get-url origin\\)\")"
+      "Bash(echo \"Remote: $\\(git remote get-url origin\\)\")",
+      "Bash(gh pr *)",
+      "Bash(git fetch *)"
     ]
   }
 }
