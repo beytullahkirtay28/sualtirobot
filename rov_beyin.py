@@ -21,19 +21,17 @@ print("=" * 50)
 
 
 def arduino_bagla():
-    """Mevcut tüm portları sırayla dene, RDY sinyali bekleyen ilk portu aç."""
+    """Mevcut tüm portları sırayla dene, RDY heartbeat'ini bekleyen ilk portu aç."""
     for port in ARDUINO_PORTS:
         if not os.path.exists(port):
             continue
         try:
             ser = serial.Serial(port, BAUD_RATE, timeout=1)
-            # Port açıldığında DTR Arduino'yu resetler.
-            # Arduino: bootloader (~2sn) + setup() (~3sn) = ~5sn
-            # Setup sonunda "RDY\n" gönderir, biz bunu bekleriz.
-            ser.reset_input_buffer()
+            # Arduino her 1 saniyede bir "RDY\n" gönderir (heartbeat).
+            # Pi5 DTR resetlemese bile Pi RDY'yi 1-2 sn icinde yakalar.
 
             print(f"⏳ {port} açıldı, Arduino RDY sinyali bekleniyor...")
-            deadline = time.time() + 8.0   # max 8sn bekle
+            deadline = time.time() + 6.0   # max 6sn bekle
             while time.time() < deadline:
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line == "RDY":
@@ -41,7 +39,6 @@ def arduino_bagla():
                     ser.reset_input_buffer()
                     return ser
 
-            # RDY gelmedi ama port açık — yine de kullanmayı dene
             print(f"⚠️  {port} açıldı ama RDY gelmedi, yine de kullanılıyor")
             return ser
 
@@ -115,6 +112,12 @@ def main():
                 print(f"💓 [{durum}] son 10sn: {paket_sayac} paket")
                 paket_sayac = 0
                 durum_yazma_t = now
+                # Arduino heartbeat'leri (RDY) buffer doldurmasin
+                if ser is not None:
+                    try:
+                        ser.reset_input_buffer()
+                    except Exception:
+                        pass
 
     except KeyboardInterrupt:
         print("\n🛑 Sistem kapatılıyor...")

@@ -25,6 +25,10 @@ const unsigned long TIMEOUT_MS = 500;
 // --- ARM ---
 const unsigned long ARM_DELAY_MS = 3000;
 
+// --- HEARTBEAT (Pi'ya sürekli "ben buradayım" sinyali) ---
+const unsigned long HEARTBEAT_MS = 1000;
+unsigned long son_heartbeat_ms = 0;
+
 Servo motor[6];
 Servo kol;
 
@@ -189,4 +193,10 @@ void loop() {
   }
 
   if (millis() - son_veri_ms > TIMEOUT_MS) durdur();   // failsafe
+
+  // Periyodik RDY sinyali — Pi5 DTR resetlemese bile Pi RDY'yi yakalar
+  if (millis() - son_heartbeat_ms > HEARTBEAT_MS) {
+    Serial.println("RDY");
+    son_heartbeat_ms = millis();
+  }
 }
