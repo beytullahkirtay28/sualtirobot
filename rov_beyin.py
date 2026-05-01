@@ -21,17 +21,26 @@ print("=" * 50)
 
 
 def arduino_bagla():
-    """Mevcut tüm portları sırayla dene, RDY heartbeat'ini bekleyen ilk portu aç."""
+    """Mevcut tüm portları sırayla dene, RDY heartbeat'ini bekleyen ilk portu aç.
+    DTR/RTS devre disi: port acmak Arduino'yu resetlemez, mevcut sketch devam eder.
+    """
     for port in ARDUINO_PORTS:
         if not os.path.exists(port):
             continue
         try:
-            ser = serial.Serial(port, BAUD_RATE, timeout=1)
-            # Arduino her 1 saniyede bir "RDY\n" gönderir (heartbeat).
-            # Pi5 DTR resetlemese bile Pi RDY'yi 1-2 sn icinde yakalar.
+            # DTR/RTS'i Arduino reset etmesin diye onceden devre disi birak
+            ser = serial.Serial()
+            ser.port = port
+            ser.baudrate = BAUD_RATE
+            ser.timeout = 1
+            ser.dtr = False
+            ser.rts = False
+            ser.open()
 
-            print(f"⏳ {port} açıldı, Arduino RDY sinyali bekleniyor...")
-            deadline = time.time() + 6.0   # max 6sn bekle
+            # Arduino her 1 saniyede bir "RDY\n" gönderir (heartbeat).
+            # Reset olmadigi icin Pi acar acmaz heartbeat'i yakalar.
+            print(f"⏳ {port} açıldı (DTR/RTS off), Arduino RDY sinyali bekleniyor...")
+            deadline = time.time() + 4.0   # max 4sn bekle (heartbeat 1sn'lik)
             while time.time() < deadline:
                 line = ser.readline().decode('utf-8', errors='ignore').strip()
                 if line == "RDY":
