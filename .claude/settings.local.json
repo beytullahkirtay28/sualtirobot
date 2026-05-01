@@ -5,7 +5,12 @@
       "Bash(where claude *)",
       "Read(//c/Users/Lenovo/**)",
       "Bash(\"/c/Users/Lenovo/AppData/Local/Microsoft/WinGet/Links/claude.exe\" plugin *)",
-      "Bash(/c/Users/Lenovo/AppData/Local/Microsoft/WinGet/Links/claude.exe plugin *)"
+      "Bash(/c/Users/Lenovo/AppData/Local/Microsoft/WinGet/Links/claude.exe plugin *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(echo \"Remote: $\\(git remote get-url origin\\)\")"
     ]
   }
 }
