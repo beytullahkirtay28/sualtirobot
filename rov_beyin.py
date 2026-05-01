@@ -21,22 +21,41 @@ print("=" * 50)
 
 
 def arduino_bagla():
-    """Mevcut tüm portları sırayla dene, ilk bulunanı aç."""
+    """Mevcut tüm portları sırayla dene, RDY sinyali bekleyen ilk portu aç."""
     for port in ARDUINO_PORTS:
         if not os.path.exists(port):
             continue
         try:
             ser = serial.Serial(port, BAUD_RATE, timeout=1)
-            time.sleep(2)  # Arduino reset toparlanma süresi
+            # Port açıldığında DTR Arduino'yu resetler.
+            # Arduino: bootloader (~2sn) + setup() (~3sn) = ~5sn
+            # Setup sonunda "RDY\n" gönderir, biz bunu bekleriz.
             ser.reset_input_buffer()
-            print(f"✅ Arduino bağlandı: {port}")
+
+            print(f"⏳ {port} açıldı, Arduino RDY sinyali bekleniyor...")
+            deadline = time.time() + 8.0   # max 8sn bekle
+            while time.time() < deadline:
+                line = ser.readline().decode('utf-8', errors='ignore').strip()
+                if line == "RDY":
+                    print(f"✅ Arduino hazır: {port}")
+                    ser.reset_input_buffer()
+                    return ser
+
+            # RDY gelmedi ama port açık — yine de kullanmayı dene
+            print(f"⚠️  {port} açıldı ama RDY gelmedi, yine de kullanılıyor")
             return ser
+
         except Exception as e:
             print(f"⚠️  {port} açılamadı: {e}")
     return None
 
 
 def main():
+    # systemd ile boot sirasinda baslatilmissa, USB/udev hazirligi icin bekle
+    if os.environ.get('INVOCATION_ID'):
+        print("🕐 systemd boot moda algılandı, USB hazırlığı için 5sn bekleniyor...")
+        time.sleep(5)
+
     # --- UDP socket: Arduino'dan bağımsız aç ---
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

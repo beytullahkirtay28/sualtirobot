@@ -165,7 +165,15 @@ void setup() {
   kol.attach(KOL_PIN, KOL_PWM_MIN, KOL_PWM_MAX);
   kol.write(kol_aci);
 
-  delay(ARM_DELAY_MS);   // ESC arm
+  // ESC arm suresi boyunca seri buffer'i temiz tut
+  // (Pi acilis aninda gelen paketler buffer doldurup sketch'i bozmasin)
+  unsigned long arm_start = millis();
+  while (millis() - arm_start < ARM_DELAY_MS) {
+    while (Serial.available()) Serial.read();   // gelen veriyi yut
+  }
+
+  // Pi'ya hazir oldugumu bildir (handshake)
+  Serial.println("RDY");
   son_veri_ms = millis();
 }
 
