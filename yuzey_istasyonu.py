@@ -57,8 +57,17 @@ class Rusumat4Control:
         self.V_HEIGHT   = CONFIG['video']['height']
         # Görüntüleme boyutu (display) — stream boyutundan farklı olabilir,
         # büyük göstermek için canvas bu boyutta açılır.
-        self.DISP_W     = CONFIG['video'].get('display_width',  self.V_WIDTH)
-        self.DISP_H     = CONFIG['video'].get('display_height', self.V_HEIGHT)
+        cfg_disp_w = CONFIG['video'].get('display_width',  self.V_WIDTH)
+        cfg_disp_h = CONFIG['video'].get('display_height', self.V_HEIGHT)
+
+        # Ekrandan taşmayı engelle — UI elemanları için ~400px ekstra alan ayır
+        screen_w = self.window.winfo_screenwidth()
+        screen_h = self.window.winfo_screenheight()
+        max_disp_w = screen_w - 100
+        max_disp_h = screen_h - 400   # başlık + bilgi paneli + butonlar için
+
+        self.DISP_W = min(cfg_disp_w, max_disp_w)
+        self.DISP_H = min(cfg_disp_h, max_disp_h)
         self.is_fullscreen = False
 
         c = CONFIG['control']
