@@ -8,6 +8,12 @@ Wants=network.target
 Type=simple
 User=ali
 WorkingDirectory=/home/ali/Desktop/ROV
+
+# Boot sirasinda USB enumeration sorunu olursa, Arduino'yu yeniden enumere et.
+# `+` prefix: ExecStartPre root yetkisi ile calisir (User=ali gozetilmez).
+# Bu, kabloyu cikar+tak ile ayni etkiyi yapar.
+ExecStartPre=+/bin/bash /home/ali/Desktop/ROV/scripts/rov-usb-reset.sh
+
 # -u: Python stdout buffering kapali, print'ler aninda journal'a gider
 ExecStart=/usr/bin/python3 -u /home/ali/Desktop/ROV/rov_beyin.py
 

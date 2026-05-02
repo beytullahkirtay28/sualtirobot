@@ -24,6 +24,9 @@ sudo rm -f /etc/systemd/system/rusumat_beyin.service
 sudo rm -f /etc/systemd/system/rusumat_kamera.service
 sudo systemctl reset-failed 2>/dev/null || true
 
+echo "▶ Helper script'lere yürütme izni..."
+chmod +x "$ROV_DIR/scripts/"*.sh
+
 echo "▶ Yeni servisleri kuruyor..."
 sudo cp "$ROV_DIR/rov-beyin.service"  /etc/systemd/system/
 sudo cp "$ROV_DIR/rov-kamera.service" /etc/systemd/system/
