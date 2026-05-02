@@ -55,19 +55,25 @@ class Rusumat4Control:
         self.V_PORT     = CONFIG['network']['video_port']
         self.V_WIDTH    = CONFIG['video']['width']
         self.V_HEIGHT   = CONFIG['video']['height']
-        # Görüntüleme boyutu (display) — stream boyutundan farklı olabilir,
-        # büyük göstermek için canvas bu boyutta açılır.
+        # Görüntüleme boyutu (display) — stream boyutundan farklı olabilir.
         cfg_disp_w = CONFIG['video'].get('display_width',  self.V_WIDTH)
         cfg_disp_h = CONFIG['video'].get('display_height', self.V_HEIGHT)
 
-        # Ekrandan taşmayı engelle — UI elemanları için ~400px ekstra alan ayır
+        # Ekrana göre dinamik clamp — UI panelinin durumuna göre canvas yüksekliği değişir.
         screen_w = self.window.winfo_screenwidth()
         screen_h = self.window.winfo_screenheight()
-        max_disp_w = screen_w - 100
-        max_disp_h = screen_h - 400   # başlık + bilgi paneli + butonlar için
 
-        self.DISP_W = min(cfg_disp_w, max_disp_w)
-        self.DISP_H = min(cfg_disp_h, max_disp_h)
+        # Sade modda gerekli UI alanı: ~210px (başlık + info + 1 sıra buton + link + alt boşluk)
+        # Gelişmiş modda: ~340px (başlık + info + 4 sıra buton + link)
+        UI_SIMPLE   = 220
+        UI_ADVANCED = 360
+
+        max_w = screen_w - 60
+        self.DISP_W       = min(cfg_disp_w, max_w)
+        self.DISP_H_FULL  = min(cfg_disp_h, screen_h - UI_SIMPLE)
+        self.DISP_H_SHORT = min(cfg_disp_h, screen_h - UI_ADVANCED)
+        self.DISP_H       = self.DISP_H_FULL   # baslangicta sade mod
+
         self.is_fullscreen = False
 
         c = CONFIG['control']
@@ -79,10 +85,15 @@ class Rusumat4Control:
         self.JOY_DEADZONE     = c['joystick_deadzone']
         self.TEST_DEGER       = c['test_motor_throttle']
 
-        # Pencere boyutu display'e göre dinamik
-        win_w = max(720, self.DISP_W + 80)
-        win_h = self.DISP_H + 380
+        # Pencere boyutu display'e göre dinamik (kompakt UI: ~150 px ek)
+        # Ekrana sığacak şekilde clamp et
+        win_w = max(720, self.DISP_W + 40)
+        win_h = self.DISP_H + 180
+        win_w = min(win_w, screen_w - 50)
+        win_h = min(win_h, screen_h - 80)
         self.window.geometry(f"{win_w}x{win_h}")
+        # Minimum boyut: en küçük pencerede bile butonlar görünsün
+        self.window.minsize(720, 480)
 
         # Klavye kısayolları
         self.window.bind("<F11>",     lambda e: self.toggle_fullscreen())
@@ -112,101 +123,107 @@ class Rusumat4Control:
     #                          GUI YAPISI
     # ============================================================
     def _build_ui(self):
-        # Üst başlık
+        # NOT: Pack sirasi alttan-yukari (side=BOTTOM) kullaniyoruz ki
+        # canvas her zaman kalan yeri doldurur (resize'da otomatik buyur/kucul).
+
+        # --- Üst başlık ---
         tk.Label(self.window, text="RÜSUMAT 4 KAPTAN KÖŞKÜ",
-                 font=("Arial", 22, "bold"), bg="#1e272e", fg="#00d8d6").pack(pady=10)
+                 font=("Arial", 16, "bold"), bg="#1e272e",
+                 fg="#00d8d6").pack(side=tk.TOP, pady=(6, 2))
 
-        # Video alanı (display boyutu)
-        self.canvas = tk.Canvas(self.window, width=self.DISP_W, height=self.DISP_H,
-                                bg="black", highlightthickness=2,
-                                highlightbackground="#575fcf")
-        self.canvas.pack()
-        self.canvas.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
+        # --- Alt UI elemanları (önce pack — canvas son ekleneni doldursun diye) ---
 
-        # Bilgi paneli (joystick / sistem / kol)
-        self.info_frame = tk.Frame(self.window, bg="#1e272e")
-        self.info_frame.pack(pady=10)
-
-        self.lbl_joy = tk.Label(self.info_frame, text="🎮 JOYSTICK: ARANIYOR...",
-                                font=("Arial", 13, "bold"), bg="#1e272e", fg="#ffa801")
-        self.lbl_joy.grid(row=0, column=0, padx=20)
-
-        self.lbl_status = tk.Label(self.info_frame, text="📡 SİSTEM: BEKLİYOR",
-                                   font=("Arial", 13, "bold"), bg="#1e272e", fg="#d2dae2")
-        self.lbl_status.grid(row=0, column=1, padx=20)
-
-        self.lbl_kol = tk.Label(self.info_frame, text="🦾 KOL: 90°",
-                                font=("Arial", 13, "bold"), bg="#1e272e", fg="#ffda79")
-        self.lbl_kol.grid(row=0, column=2, padx=20)
-
-        # ========== SADE PANEL (varsayılan) ==========
-        self.simple_frame = tk.Frame(self.window, bg="#1e272e")
-        self.simple_frame.pack(pady=8)
-
-        tk.Button(self.simple_frame, text="🔄 BAĞLAN / YENİDEN BAĞLAN",
-                  command=self.restart_connection,
-                  font=("Arial", 12, "bold"), bg="#05c46b", fg="white",
-                  width=22, height=2).grid(row=0, column=0, padx=6)
-
-        tk.Button(self.simple_frame, text="📷 KAMERAYI AÇ / KAPA",
-                  command=self.toggle_camera,
-                  font=("Arial", 12, "bold"), bg="#3742fa", fg="white",
-                  width=22, height=2).grid(row=0, column=1, padx=6)
-
-        tk.Button(self.simple_frame, text="🖥 TAM EKRAN (F11)",
-                  command=self.toggle_fullscreen,
-                  font=("Arial", 12, "bold"), bg="#8e44ad", fg="white",
-                  width=18, height=2).grid(row=0, column=2, padx=6)
-
-        # Gelişmiş seçenekler link
+        # Gelişmiş seçenekler link (en altta)
         self.advanced_link = tk.Label(self.window, text="⚙ Gelişmiş Seçenekler ▼",
-                                      font=("Arial", 10, "underline"),
+                                      font=("Arial", 9, "underline"),
                                       bg="#1e272e", fg="#70a1ff", cursor="hand2")
-        self.advanced_link.pack(pady=4)
+        self.advanced_link.pack(side=tk.BOTTOM, pady=2)
         self.advanced_link.bind("<Button-1>", lambda e: self.toggle_advanced())
 
-        # ========== GELİŞMİŞ PANEL (gizli) ==========
+        # Sade panel (varsayılan)
+        self.simple_frame = tk.Frame(self.window, bg="#1e272e")
+        self.simple_frame.pack(side=tk.BOTTOM, pady=4)
+
+        tk.Button(self.simple_frame, text="🔄 BAĞLAN",
+                  command=self.restart_connection,
+                  font=("Arial", 10, "bold"), bg="#05c46b", fg="white",
+                  width=14, height=1).grid(row=0, column=0, padx=4)
+
+        tk.Button(self.simple_frame, text="📷 KAMERA",
+                  command=self.toggle_camera,
+                  font=("Arial", 10, "bold"), bg="#3742fa", fg="white",
+                  width=12, height=1).grid(row=0, column=1, padx=4)
+
+        tk.Button(self.simple_frame, text="🖥 TAM EKRAN",
+                  command=self.toggle_fullscreen,
+                  font=("Arial", 10, "bold"), bg="#8e44ad", fg="white",
+                  width=14, height=1).grid(row=0, column=2, padx=4)
+
+        # Gelişmiş panel (gizli) - aynı pozisyonda
         self.advanced_frame = tk.Frame(self.window, bg="#1e272e")
+        self._build_advanced_panel()
 
-        # Satır 1: Bağlantı
-        row1 = tk.Frame(self.advanced_frame, bg="#1e272e"); row1.pack(pady=4)
-        self._mk_button(row1, "🟢 BAĞLAN",            self.connect,            "#05c46b", 0)
-        self._mk_button(row1, "🔴 BAĞLANTIYI KES",    self.disconnect,         "#ff3f34", 1)
-        self._mk_button(row1, "🔄 BAĞLANTIYI YİNELE", self.restart_connection, "#ffa502", 2)
+        # Bilgi paneli (joystick/sistem/kol) - sade panelin üstünde
+        self.info_frame = tk.Frame(self.window, bg="#1e272e")
+        self.info_frame.pack(side=tk.BOTTOM, pady=2)
 
-        # Satır 2: Kamera + Kol
-        row2 = tk.Frame(self.advanced_frame, bg="#1e272e"); row2.pack(pady=4)
-        self._mk_button(row2, "📷 KAMERA AÇ/KAPA",     self.toggle_camera, "#3742fa", 0)
-        self._mk_button(row2, "🦾 KOL: SIFIRLA (90°)", self.kol_sifirla,   "#7158e2", 1)
-        self._mk_button(row2, f"🦾 KOL +{self.KOL_ADIM_BTN}°", self.kol_arttir, "#7158e2", 2)
-        self._mk_button(row2, f"🦾 KOL -{self.KOL_ADIM_BTN}°", self.kol_azalt, "#7158e2", 3)
+        self.lbl_joy = tk.Label(self.info_frame, text="🎮 JOYSTICK: ARANIYOR...",
+                                font=("Arial", 10, "bold"), bg="#1e272e", fg="#ffa801")
+        self.lbl_joy.grid(row=0, column=0, padx=15)
 
-        # Satır 3: Motor test
-        tk.Label(self.advanced_frame,
-                 text="Motor Testi (basılı tut → ilgili motor düşük güçle çalışır):",
-                 font=("Arial", 9), bg="#1e272e", fg="#a4b0be").pack(pady=(8, 2))
-        row3 = tk.Frame(self.advanced_frame, bg="#1e272e"); row3.pack(pady=4)
+        self.lbl_status = tk.Label(self.info_frame, text="📡 BEKLİYOR",
+                                   font=("Arial", 10, "bold"), bg="#1e272e", fg="#d2dae2")
+        self.lbl_status.grid(row=0, column=1, padx=15)
+
+        self.lbl_kol = tk.Label(self.info_frame, text="🦾 KOL: 90°",
+                                font=("Arial", 10, "bold"), bg="#1e272e", fg="#ffda79")
+        self.lbl_kol.grid(row=0, column=2, padx=15)
+
+        # --- Video alanı (kalan tüm yeri doldurur) ---
+        self.canvas = tk.Canvas(self.window, bg="black", highlightthickness=1,
+                                highlightbackground="#575fcf")
+        self.canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=2)
+        self.canvas.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
+
+    def _build_advanced_panel(self):
+        # Tek satırda kompakt dizilim: 3+4 ust satir, 6 motor + 1 kapat alt satir
+
+        # Satır 1: Bağlantı + Kamera + Kol kontrol (7 buton tek satırda)
+        row1 = tk.Frame(self.advanced_frame, bg="#1e272e")
+        row1.pack(pady=2)
+        self._mk_btn(row1, "🟢 BAĞLAN",      self.connect,            "#05c46b", 0)
+        self._mk_btn(row1, "🔴 KES",          self.disconnect,         "#ff3f34", 1)
+        self._mk_btn(row1, "🔄 YİNELE",       self.restart_connection, "#ffa502", 2)
+        self._mk_btn(row1, "📷 KAMERA",       self.toggle_camera,      "#3742fa", 3)
+        self._mk_btn(row1, "🦾 SIFIRLA",     self.kol_sifirla,        "#7158e2", 4)
+        self._mk_btn(row1, f"🦾 +{self.KOL_ADIM_BTN}°", self.kol_arttir, "#7158e2", 5)
+        self._mk_btn(row1, f"🦾 -{self.KOL_ADIM_BTN}°", self.kol_azalt, "#7158e2", 6)
+
+        # Satır 2: Motor test (6 buton + kapat)
+        row2 = tk.Frame(self.advanced_frame, bg="#1e272e")
+        row2.pack(pady=2)
+        tk.Label(row2, text="Motor (basılı tut):",
+                 font=("Arial", 9), bg="#1e272e", fg="#a4b0be").grid(row=0, column=0, padx=(0, 6))
         for i in range(6):
             idx = i + 1
-            b = tk.Button(row3, text=f"M{idx}", font=("Arial", 11, "bold"),
-                          bg="#485460", fg="white", width=8, height=2,
+            b = tk.Button(row2, text=f"M{idx}", font=("Arial", 9, "bold"),
+                          bg="#485460", fg="white", width=5, height=1,
                           activebackground="#ff6348")
-            b.grid(row=0, column=i, padx=4)
+            b.grid(row=0, column=i + 1, padx=2)
             b.bind("<ButtonPress-1>",   lambda e, x=idx: self._test_motor_start(x))
             b.bind("<ButtonRelease-1>", lambda e:        self._test_motor_stop())
 
-        # Satır 4: Kapat
-        row4 = tk.Frame(self.advanced_frame, bg="#1e272e"); row4.pack(pady=10)
-        tk.Button(row4, text="✖ GELİŞMİŞ SEÇENEKLERİ KAPAT",
+        tk.Button(row2, text="✖ KAPAT",
                   command=self.toggle_advanced,
-                  font=("Arial", 11, "bold"), bg="#57606f", fg="white",
-                  width=32, height=2).grid(row=0, column=0)
+                  font=("Arial", 9, "bold"), bg="#57606f", fg="white",
+                  width=8, height=1).grid(row=0, column=8, padx=(8, 0))
 
-    def _mk_button(self, parent, text, cmd, color, col):
+    def _mk_btn(self, parent, text, cmd, color, col):
+        """Kompakt buton (gelişmiş panel için)."""
         b = tk.Button(parent, text=text, command=cmd,
-                      font=("Arial", 10, "bold"), bg=color, fg="white",
-                      width=22, height=2)
-        b.grid(row=0, column=col, padx=4)
+                      font=("Arial", 9, "bold"), bg=color, fg="white",
+                      width=10, height=1)
+        b.grid(row=0, column=col, padx=2)
         return b
 
     # ============================================================
@@ -286,19 +303,15 @@ class Rusumat4Control:
         if not self.camera_visible:
             return
 
-        # Hedef boyut: tam ekranda screen, normal modda canvas display boyutu
-        if self.is_fullscreen:
-            target_w = self.window.winfo_screenwidth()
-            target_h = self.window.winfo_screenheight()
-        else:
-            target_w = self.DISP_W
-            target_h = self.DISP_H
+        # Hedef = canvas'ın anlık boyutu (pencere resize'da otomatik değişir)
+        target_w = max(self.canvas.winfo_width(), 100)
+        target_h = max(self.canvas.winfo_height(), 100)
 
         # En boy oranını koruyarak ölçekle (letterbox)
         src_w, src_h = pil_img.size
         scale = min(target_w / src_w, target_h / src_h)
-        new_w = int(src_w * scale)
-        new_h = int(src_h * scale)
+        new_w = max(1, int(src_w * scale))
+        new_h = max(1, int(src_h * scale))
         if (new_w, new_h) != (src_w, src_h):
             pil_img = pil_img.resize((new_w, new_h), Image.BILINEAR)
 
@@ -327,25 +340,24 @@ class Rusumat4Control:
         self.simple_frame.pack_forget()
         self.advanced_frame.pack_forget()
         self.advanced_link.pack_forget()
-        # Canvas'ı ekranın tamamına çek
-        screen_w = self.window.winfo_screenwidth()
-        screen_h = self.window.winfo_screenheight()
-        self.canvas.config(width=screen_w, height=screen_h, highlightthickness=0)
+        self.canvas.config(highlightthickness=0)
+        # Canvas zaten fill=BOTH expand=True ile pack'li, ekranın tamamını alır
 
     def exit_fullscreen(self):
         if not self.is_fullscreen:
             return
         self.is_fullscreen = False
         self.window.attributes('-fullscreen', False)
-        # Canvas'ı normal display boyutuna geri al
-        self.canvas.config(width=self.DISP_W, height=self.DISP_H, highlightthickness=2)
-        # UI elemanlarını geri pack et (canvas zaten yukarıda)
-        self.info_frame.pack(pady=10)
+        self.canvas.config(highlightthickness=1)
+        # UI elemanlarını geri pack et (alt tarafa)
+        self.advanced_link.pack(side=tk.BOTTOM, pady=2)
         if self.advanced_open:
-            self.advanced_frame.pack(pady=8)
+            self.advanced_frame.pack(side=tk.BOTTOM, pady=2, before=self.advanced_link)
         else:
-            self.simple_frame.pack(pady=8)
-        self.advanced_link.pack(pady=4)
+            self.simple_frame.pack(side=tk.BOTTOM, pady=4, before=self.advanced_link)
+        self.info_frame.pack(side=tk.BOTTOM, pady=2,
+                             before=(self.advanced_frame if self.advanced_open
+                                     else self.simple_frame))
 
     # ============================================================
     #                        KOL SERVO
@@ -418,11 +430,11 @@ class Rusumat4Control:
     def toggle_advanced(self):
         if self.advanced_open:
             self.advanced_frame.pack_forget()
-            self.simple_frame.pack(pady=8, before=self.advanced_link)
+            self.simple_frame.pack(side=tk.BOTTOM, pady=4, before=self.advanced_link)
             self.advanced_link.config(text="⚙ Gelişmiş Seçenekler ▼")
         else:
             self.simple_frame.pack_forget()
-            self.advanced_frame.pack(pady=8, before=self.advanced_link)
+            self.advanced_frame.pack(side=tk.BOTTOM, pady=2, before=self.advanced_link)
             self.advanced_link.config(text="⚙ Gelişmiş Seçenekler ▲")
         self.advanced_open = not self.advanced_open
 
