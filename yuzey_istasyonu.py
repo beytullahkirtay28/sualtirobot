@@ -45,8 +45,9 @@ class Rusumat4Control:
     def __init__(self, window):
         self.window = window
         self.window.title("RÜSUMAT 4 - KONTROL MERKEZİ V5")
-        self.window.geometry("960x900")
         self.window.configure(bg="#1e272e")
+        # Geometry video boyutuna göre dinamik (alt panel + başlık için ek alan)
+        # V_WIDTH ve V_HEIGHT henüz set edilmedi; aşağıda config okunduktan sonra ayarlanır
 
         # --- AYARLAR (config'den) ---
         self.PI_IP      = CONFIG['network']['pi_ip']
@@ -63,6 +64,13 @@ class Rusumat4Control:
         self.KOL_BTN_AC       = c['kol_btn_open']
         self.JOY_DEADZONE     = c['joystick_deadzone']
         self.TEST_DEGER       = c['test_motor_throttle']
+
+        # Pencere boyutu video çözünürlüğüne göre dinamik
+        # Genişlik: video + 80px kenar boşluğu (min 720)
+        # Yükseklik: video + 380px (başlık + bilgi paneli + butonlar)
+        win_w = max(720, self.V_WIDTH + 80)
+        win_h = self.V_HEIGHT + 380
+        self.window.geometry(f"{win_w}x{win_h}")
 
         # --- DURUM ---
         self.test_motor       = None       # (idx 1..6, val) ya da None
