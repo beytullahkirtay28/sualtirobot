@@ -19,6 +19,10 @@
 const uint8_t MOTOR_PIN[6] = {3, 5, 6, 9, 10, 11};
 const uint8_t KOL_PIN = 4;
 
+// Motor yon ayari: true = ters cevrilir (yazılım fix)
+//   index 0=M1, 1=M2, 2=M3, 3=M4, 4=M5, 5=M6
+const bool MOTOR_INVERT[6] = {false, false, false, true, true, false};
+
 // ESC (Bidirectional 30A, 1000-2000us)
 const int ESC_MIN     = 1000;
 const int ESC_NEUTRAL = 1500;
@@ -68,7 +72,8 @@ int eksenToPwm(float v) {
 
 void motorlariYaz(float v[6]) {
   for (int i = 0; i < 6; i++) {
-    motor[i].writeMicroseconds(eksenToPwm(v[i]));
+    float val = MOTOR_INVERT[i] ? -v[i] : v[i];
+    motor[i].writeMicroseconds(eksenToPwm(val));
   }
 }
 
@@ -115,7 +120,8 @@ void parseMotorTest(const char* s) {
     motor[i].writeMicroseconds(ESC_NEUTRAL);
   }
   if (idx >= 1 && idx <= 6) {
-    motor[idx - 1].writeMicroseconds(eksenToPwm(val));
+    float v = MOTOR_INVERT[idx - 1] ? -val : val;
+    motor[idx - 1].writeMicroseconds(eksenToPwm(v));
   }
 }
 
