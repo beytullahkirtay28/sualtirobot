@@ -1,7 +1,6 @@
 [Unit]
-Description=ROV Kamera (Picamera2 -> TCP Stream)
+Description=ROV Kamera (Picamera2 -> JPEG -> TCP Stream)
 After=network.target
-Wants=network.target
 
 [Service]
 Type=simple
@@ -10,9 +9,13 @@ WorkingDirectory=/home/ali/Desktop/ROV
 # -u: stdout buffering kapali, print'ler aninda journal'a gider
 ExecStart=/usr/bin/python3 -u /home/ali/Desktop/ROV/kamera_yayini.py
 
-# Cokerse otomatik tekrar basla
+# Cokerse otomatik tekrar basla (3sn ara, kamera serbest kalmasi icin)
 Restart=always
 RestartSec=3
+
+# 5 dakikada 5'ten cok crash olursa servisi durdur (sonsuz loop'u kir)
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 Environment=PYTHONUNBUFFERED=1
 

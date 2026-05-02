@@ -1,0 +1,31 @@
+{
+  "network": {
+    "pi_ip": "192.168.1.100",
+    "laptop_ip": "192.168.1.10",
+    "udp_port": 5005,
+    "video_port": 8089
+  },
+  "video": {
+    "width": 640,
+    "height": 480,
+    "fps": 30,
+    "jpeg_quality": 75
+  },
+  "arduino": {
+    "baud_rate": 115200,
+    "ports": [
+      "/dev/ttyUSB0",
+      "/dev/ttyACM0",
+      "/dev/ttyUSB1",
+      "/dev/ttyACM1"
+    ]
+  },
+  "control": {
+    "kol_step_joy": 4,
+    "kol_step_btn": 10,
+    "kol_btn_close": 4,
+    "kol_btn_open": 5,
+    "joystick_deadzone": 0.08,
+    "test_motor_throttle": 0.4
+  }
+}

@@ -1,12 +1,11 @@
 [Unit]
 Description=ROV Beyin (UDP -> Arduino Serial bridge)
-# USB ve ag hazir olunca basla
-After=network.target
+# Ag + USB hazir olunca basla
+After=network.target systemd-udev-settle.service
 Wants=network.target
 
 [Service]
 Type=simple
-# KULLANICI ADINI VE YOLU KENDINE GORE DEGISTIR:
 User=ali
 WorkingDirectory=/home/ali/Desktop/ROV
 # -u: Python stdout buffering kapali, print'ler aninda journal'a gider
