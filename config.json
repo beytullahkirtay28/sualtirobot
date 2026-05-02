@@ -9,7 +9,9 @@
     "width": 1280,
     "height": 720,
     "fps": 30,
-    "jpeg_quality": 85
+    "jpeg_quality": 85,
+    "display_width": 1600,
+    "display_height": 900
   },
   "arduino": {
     "baud_rate": 115200,
