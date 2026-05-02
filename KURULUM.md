@@ -61,9 +61,22 @@ sudo journalctl -u rov-kamera -f      # canlı log
 ## Laptop Kurulumu
 
 ```bash
-pip install pygame opencv-python pillow numpy
+pip install pygame opencv-python pillow numpy pyserial
 python yuzey_istasyonu.py
 ```
+
+### .exe Olarak Paketle (Windows, Python kurulu olmasın istersen)
+
+`build.bat` dosyasını **çift tıkla**. Otomatik olarak:
+1. PyInstaller ve gerekli paketleri yükler
+2. `dist\Rusumat4.exe` ve `dist\config.json` üretir
+
+Sonuç:
+- `dist\` klasöründeki **iki dosyayı** (`Rusumat4.exe` + `config.json`) birlikte kopyala
+- Python kurulu olmayan Windows makinede çift tıkla çalışır
+- IP/port değiştirmek için `config.json` düzenlenir
+
+**Tek dosya yerine klasör istersen** (daha hızlı başlangıç): build.bat içindeki `--onefile` parametresini `--onedir` yap.
 
 ## Konfigürasyon
 
