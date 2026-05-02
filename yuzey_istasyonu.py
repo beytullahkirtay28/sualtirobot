@@ -45,8 +45,9 @@ class Rusumat4Control:
     def __init__(self, window):
         self.window = window
         self.window.title("RÜSUMAT 4 - KONTROL MERKEZİ V5")
-        self.window.geometry("960x900")
         self.window.configure(bg="#1e272e")
+        # Geometry video boyutuna göre dinamik (alt panel + başlık için ek alan)
+        # V_WIDTH ve V_HEIGHT henüz set edilmedi; aşağıda config okunduktan sonra ayarlanır
 
         # --- AYARLAR (config'den) ---
         self.PI_IP      = CONFIG['network']['pi_ip']
@@ -54,6 +55,11 @@ class Rusumat4Control:
         self.V_PORT     = CONFIG['network']['video_port']
         self.V_WIDTH    = CONFIG['video']['width']
         self.V_HEIGHT   = CONFIG['video']['height']
+        # Görüntüleme boyutu (display) — stream boyutundan farklı olabilir,
+        # büyük göstermek için canvas bu boyutta açılır.
+        self.DISP_W     = CONFIG['video'].get('display_width',  self.V_WIDTH)
+        self.DISP_H     = CONFIG['video'].get('display_height', self.V_HEIGHT)
+        self.is_fullscreen = False
 
         c = CONFIG['control']
         self.kol_aci          = 90
@@ -63,6 +69,16 @@ class Rusumat4Control:
         self.KOL_BTN_AC       = c['kol_btn_open']
         self.JOY_DEADZONE     = c['joystick_deadzone']
         self.TEST_DEGER       = c['test_motor_throttle']
+
+        # Pencere boyutu display'e göre dinamik
+        win_w = max(720, self.DISP_W + 80)
+        win_h = self.DISP_H + 380
+        self.window.geometry(f"{win_w}x{win_h}")
+
+        # Klavye kısayolları
+        self.window.bind("<F11>",     lambda e: self.toggle_fullscreen())
+        self.window.bind("<Escape>",  lambda e: self.exit_fullscreen())
+        self.window.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
 
         # --- DURUM ---
         self.test_motor       = None       # (idx 1..6, val) ya da None
@@ -91,11 +107,12 @@ class Rusumat4Control:
         tk.Label(self.window, text="RÜSUMAT 4 KAPTAN KÖŞKÜ",
                  font=("Arial", 22, "bold"), bg="#1e272e", fg="#00d8d6").pack(pady=10)
 
-        # Video alanı
-        self.canvas = tk.Canvas(self.window, width=self.V_WIDTH, height=self.V_HEIGHT,
+        # Video alanı (display boyutu)
+        self.canvas = tk.Canvas(self.window, width=self.DISP_W, height=self.DISP_H,
                                 bg="black", highlightthickness=2,
                                 highlightbackground="#575fcf")
         self.canvas.pack()
+        self.canvas.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
 
         # Bilgi paneli (joystick / sistem / kol)
         self.info_frame = tk.Frame(self.window, bg="#1e272e")
@@ -120,12 +137,17 @@ class Rusumat4Control:
         tk.Button(self.simple_frame, text="🔄 BAĞLAN / YENİDEN BAĞLAN",
                   command=self.restart_connection,
                   font=("Arial", 12, "bold"), bg="#05c46b", fg="white",
-                  width=28, height=2).grid(row=0, column=0, padx=8)
+                  width=22, height=2).grid(row=0, column=0, padx=6)
 
         tk.Button(self.simple_frame, text="📷 KAMERAYI AÇ / KAPA",
                   command=self.toggle_camera,
                   font=("Arial", 12, "bold"), bg="#3742fa", fg="white",
-                  width=28, height=2).grid(row=0, column=1, padx=8)
+                  width=22, height=2).grid(row=0, column=1, padx=6)
+
+        tk.Button(self.simple_frame, text="🖥 TAM EKRAN (F11)",
+                  command=self.toggle_fullscreen,
+                  font=("Arial", 12, "bold"), bg="#8e44ad", fg="white",
+                  width=18, height=2).grid(row=0, column=2, padx=6)
 
         # Gelişmiş seçenekler link
         self.advanced_link = tk.Label(self.window, text="⚙ Gelişmiş Seçenekler ▼",
@@ -254,9 +276,67 @@ class Rusumat4Control:
     def _display_frame(self, pil_img):
         if not self.camera_visible:
             return
+
+        # Hedef boyut: tam ekranda screen, normal modda canvas display boyutu
+        if self.is_fullscreen:
+            target_w = self.window.winfo_screenwidth()
+            target_h = self.window.winfo_screenheight()
+        else:
+            target_w = self.DISP_W
+            target_h = self.DISP_H
+
+        # En boy oranını koruyarak ölçekle (letterbox)
+        src_w, src_h = pil_img.size
+        scale = min(target_w / src_w, target_h / src_h)
+        new_w = int(src_w * scale)
+        new_h = int(src_h * scale)
+        if (new_w, new_h) != (src_w, src_h):
+            pil_img = pil_img.resize((new_w, new_h), Image.BILINEAR)
+
         img_tk = ImageTk.PhotoImage(image=pil_img)
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=img_tk)
+        # Ortala
+        x = (target_w - new_w) // 2
+        y = (target_h - new_h) // 2
+        self.canvas.delete("all")
+        self.canvas.create_image(x, y, anchor=tk.NW, image=img_tk)
         self.canvas.image = img_tk   # GC referansı
+
+    # ============================================================
+    #                        TAM EKRAN
+    # ============================================================
+    def toggle_fullscreen(self):
+        if self.is_fullscreen:
+            self.exit_fullscreen()
+        else:
+            self.enter_fullscreen()
+
+    def enter_fullscreen(self):
+        self.is_fullscreen = True
+        self.window.attributes('-fullscreen', True)
+        # Tam ekranda canvas hariç her şeyi gizle
+        self.info_frame.pack_forget()
+        self.simple_frame.pack_forget()
+        self.advanced_frame.pack_forget()
+        self.advanced_link.pack_forget()
+        # Canvas'ı ekranın tamamına çek
+        screen_w = self.window.winfo_screenwidth()
+        screen_h = self.window.winfo_screenheight()
+        self.canvas.config(width=screen_w, height=screen_h, highlightthickness=0)
+
+    def exit_fullscreen(self):
+        if not self.is_fullscreen:
+            return
+        self.is_fullscreen = False
+        self.window.attributes('-fullscreen', False)
+        # Canvas'ı normal display boyutuna geri al
+        self.canvas.config(width=self.DISP_W, height=self.DISP_H, highlightthickness=2)
+        # UI elemanlarını geri pack et (canvas zaten yukarıda)
+        self.info_frame.pack(pady=10)
+        if self.advanced_open:
+            self.advanced_frame.pack(pady=8)
+        else:
+            self.simple_frame.pack(pady=8)
+        self.advanced_link.pack(pady=4)
 
     # ============================================================
     #                        KOL SERVO
