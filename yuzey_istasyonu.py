@@ -98,7 +98,6 @@ class Rusumat4Control:
         # Klavye kısayolları
         self.window.bind("<F11>",     lambda e: self.toggle_fullscreen())
         self.window.bind("<Escape>",  lambda e: self.exit_fullscreen())
-        self.window.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
 
         # --- DURUM ---
         self.test_motor       = None       # (idx 1..6, val) ya da None
@@ -183,7 +182,6 @@ class Rusumat4Control:
         self.canvas = tk.Canvas(self.window, bg="black", highlightthickness=1,
                                 highlightbackground="#575fcf")
         self.canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=2)
-        self.canvas.bind("<Double-Button-1>", lambda e: self.toggle_fullscreen())
 
     def _build_advanced_panel(self):
         # Tek satırda kompakt dizilim: 3+4 ust satir, 6 motor + 1 kapat alt satir
