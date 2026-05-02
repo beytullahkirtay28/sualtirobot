@@ -130,11 +130,13 @@ def main():
                     time.sleep(FRAME_INTERVAL - elapsed)
                 last_frame_t = time.time()
 
-                # Frame yakala (RGB888 → cv2 BGR'a çevir)
-                frame = cam.capture_array()
-                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                # Frame yakala
+                # NOT: picamera2 "RGB888" formati aslinda libcamera/V4L2
+                # konvansiyonu nedeniyle BGR sirali veri donduruyor.
+                # cv2 zaten BGR bekledigi icin DOGRUDAN kullanilir, swap YOK.
+                frame_bgr = cam.capture_array()
 
-                # JPEG sıkıştır
+                # JPEG sıkıştır (cv2 BGR girisi bekler — data zaten BGR)
                 ok, jpeg = cv2.imencode(
                     '.jpg', frame_bgr,
                     [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]
