@@ -300,7 +300,8 @@ class Rusumat4Control:
     def toggle_camera(self):
         self.camera_visible = not self.camera_visible
         if self.camera_visible:
-            self.canvas.pack(before=self.info_frame)
+            # Orijinal pack ayarlariyla geri ekle (fill+expand olmazsa kucuk kalir)
+            self.canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=4, pady=2)
         else:
             self.canvas.pack_forget()
 
